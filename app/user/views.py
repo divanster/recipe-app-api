@@ -1,5 +1,5 @@
 """
-Serializers for the user API View.
+Serializers for the user Api View.
 """
 
 from rest_framework import generics, authentication, permissions

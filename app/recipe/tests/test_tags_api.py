@@ -1,5 +1,5 @@
 """
-Tests for the tags API.
+Tests for the tags Api.
 """
 from decimal import Decimal
 
@@ -32,7 +32,7 @@ def create_user(email='user@example.com', password='testpass123'):
 
 
 class PublicTagsApiTests(TestCase):
-    """Test unauthenticated API requests."""
+    """Test unauthenticated Api requests."""
 
     def setUp(self):
         self.client = APIClient()
@@ -45,7 +45,7 @@ class PublicTagsApiTests(TestCase):
 
 
 class PrivateTagsApiTests(TestCase):
-    """Test authenticated API requests."""
+    """Test authenticated Api requests."""
 
     def setUp(self):
         self.user = create_user()

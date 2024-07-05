@@ -59,20 +59,20 @@ def create_user(**params):
 
 
 class PublicRecipeAPITests(TestCase):
-    """Test unauthenticated API requests."""
+    """Test unauthenticated Api requests."""
 
     def setUp(self):
         self.client = APIClient()
 
     def test_auth_required(self):
-        """Test auth is required to call API."""
+        """Test auth is required to call Api."""
         res = self.client.get(RECIPES_URL)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class PrivateRecipeApiTests(TestCase):
-    """Test authenticated API requests."""
+    """Test authenticated Api requests."""
 
     def setUp(self):
         self.client = APIClient()
@@ -420,7 +420,7 @@ class PrivateRecipeApiTests(TestCase):
 
 
 class ImageUploadTests(TestCase):
-    """Tests for the image upload API."""
+    """Tests for the image upload Api."""
 
     def setUp(self):
         self.client = APIClient()

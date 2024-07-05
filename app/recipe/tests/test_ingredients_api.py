@@ -1,5 +1,5 @@
 """
-Tests for the ingredients API.
+Tests for the ingredients Api.
 """
 from decimal import Decimal
 
@@ -31,7 +31,7 @@ def create_user(email='user@example.com', password='testpass123'):
 
 
 class PublicIngredientsApiTests(TestCase):
-    """Test unauthenticated API requests."""
+    """Test unauthenticated Api requests."""
 
     def setUp(self):
         self.client = APIClient()
@@ -44,7 +44,7 @@ class PublicIngredientsApiTests(TestCase):
 
 
 class PrivateIngredientsApiTests(TestCase):
-    """Test authenticated API requests."""
+    """Test authenticated Api requests."""
 
     def setUp(self):
         self.user = create_user()

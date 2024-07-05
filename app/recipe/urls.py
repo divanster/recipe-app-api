@@ -15,9 +15,12 @@ router = DefaultRouter()
 router.register('recipes', views.RecipeViewSet)
 router.register('tags', views.TagViewSet)
 router.register('ingredients', views.IngredientViewSet)
+router.register('follow', views.FollowViewSet, basename='follow')
+router.register('comments', views.CommentViewSet, basename='comment')
 
 app_name = 'recipe'
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('comments/<int:pk>/delete-comment/', views.CommentViewSet.as_view({'delete': 'destroy'}), name='delete-comment'),
 ]

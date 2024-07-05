@@ -19,11 +19,13 @@ from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
-# Create your views here.
 from core.models import (
     Recipe,
     Tag,
     Ingredient,
+    Rating,
+    Follow,
+    Comment,
 )
 from recipe import serializers
 
@@ -45,7 +47,7 @@ from recipe import serializers
     )
 )
 class RecipeViewSet(viewsets.ModelViewSet):
-    """View for manage recipe APIs."""
+    """View for managing recipe APIs."""
     serializer_class = serializers.RecipeDetailSerializer
     queryset = Recipe.objects.all()
     authentication_classes = [TokenAuthentication]
@@ -96,6 +98,46 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(methods=['POST'], detail=True)
+    def like(self, request, pk=None):
+        """Like a recipe."""
+        recipe = self.get_object()
+        recipe.likes.add(request.user)
+        return Response(status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=True)
+    def unlike(self, request, pk=None):
+        """Unlike a recipe."""
+        recipe = self.get_object()
+        recipe.likes.remove(request.user)
+        return Response(status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=True)
+    def rate(self, request, pk=None):
+        """Rate a recipe."""
+        recipe = self.get_object()
+        rating_value = request.data.get('score')
+        rating, created = Rating.objects.update_or_create(
+            user=request.user, recipe=recipe,
+            defaults={'score': rating_value}
+        )
+        recipe.update_rating()
+        serializer = serializers.RatingSerializer(rating)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=True, url_path='add-comment')
+    def add_comment(self, request, pk=None):
+        """Add a comment to a recipe."""
+        recipe = self.get_object()
+        comment_content = request.data.get('content')
+        comment = Comment.objects.create(
+            user=request.user,
+            recipe=recipe,
+            content=comment_content
+        )
+        serializer = serializers.CommentSerializer(comment)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 @extend_schema_view(
     list=extend_schema(
@@ -140,3 +182,48 @@ class IngredientViewSet(BaseRecipeAttrViewSet):
     """Manage ingredients in the database."""
     serializer_class = serializers.IngredientSerializer
     queryset = Ingredient.objects.all()
+
+
+class FollowViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    """Manage following and unfollowing users."""
+    serializer_class = serializers.FollowSerializer
+    queryset = Follow.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Retrieve the follows for the authenticated user."""
+        return self.queryset.filter(follower=self.request.user)
+
+    @action(methods=['POST'], detail=True, url_path='follow')
+    def follow(self, request, pk=None):
+        """Follow a user."""
+        user_to_follow = self.get_object()
+        Follow.objects.get_or_create(follower=request.user, followee=user_to_follow)
+        return Response(status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=True, url_path='unfollow')
+    def unfollow(self, request, pk=None):
+        """Unfollow a user."""
+        user_to_unfollow = self.get_object()
+        Follow.objects.filter(follower=request.user, followee=user_to_unfollow).delete()
+        return Response(status=status.HTTP_200_OK)
+
+
+class CommentViewSet(viewsets.GenericViewSet, mixins.DestroyModelMixin):
+    """Manage comments in the database."""
+    serializer_class = serializers.CommentSerializer
+    queryset = Comment.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Retrieve the comments for the authenticated user."""
+        return self.queryset.filter(user=self.request.user)
+
+    @action(methods=['DELETE'], detail=True, url_path='delete-comment')
+    def delete_comment(self, request, pk=None):
+        """Delete a comment."""
+        comment = self.get_object()
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
