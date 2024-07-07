@@ -23,4 +23,5 @@ app_name = 'recipe'
 urlpatterns = [
     path('', include(router.urls)),
     path('comments/<int:pk>/delete-comment/', views.CommentViewSet.as_view({'delete': 'destroy'}), name='delete-comment'),
+    path('profile/<int:pk>/', views.ProfileView.as_view(), name='profile'),
 ]

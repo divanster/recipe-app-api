@@ -1,7 +1,37 @@
-# backend/app/recipe/serializers.py
+# recipe/serializers.py
 
 from rest_framework import serializers
-from core.models import Recipe, Tag, Ingredient, Rating, Follow, Comment
+from core.models import Recipe, Tag, Ingredient, Rating, Follow, Comment, User
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Serializer for user profiles."""
+    password = serializers.CharField(write_only=True)
+    recipes = serializers.PrimaryKeyRelatedField(many=True, queryset=Recipe.objects.all(), source='recipe_set')
+    following = serializers.SerializerMethodField()
+    followers = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'name', 'password', 'recipes', 'following', 'followers']
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            name=validated_data['name'],
+            password=validated_data['password']
+        )
+        return user
+
+    def get_following(self, obj):
+        """Return a list of users the current user is following."""
+        follows = Follow.objects.filter(follower=obj)
+        return [follow.followee.id for follow in follows]
+
+    def get_followers(self, obj):
+        """Return a list of users following the current user."""
+        followers = Follow.objects.filter(followee=obj)
+        return [follow.follower.id for follow in followers]
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -50,35 +80,35 @@ class RecipeSerializer(serializers.ModelSerializer):
     average_rating = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
     ratings_count = serializers.IntegerField(read_only=True)
     is_liked = serializers.SerializerMethodField()
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = Recipe
         fields = [
             'id', 'title', 'time_minutes', 'price', 'link', 'tags',
             'ingredients', 'likes', 'average_rating', 'ratings_count', 'is_liked',
+            'description', 'image', 'user'
         ]
         read_only_fields = ['id', 'likes', 'average_rating', 'ratings_count', 'is_liked']
 
     def get_is_liked(self, obj):
-        user = self.context['request'].user
-        return obj.likes.filter(id=user.id).exists()
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(id=request.user.id).exists()
+        return False
 
     def _get_or_create_tags(self, tags, recipe):
         """Handle getting or creating tags as needed."""
-        auth_user = self.context['request'].user
         for tag in tags:
             tag_obj, created = Tag.objects.get_or_create(
-                user=auth_user,
                 **tag,
             )
             recipe.tags.add(tag_obj)
 
     def _get_or_create_ingredients(self, ingredients, recipe):
         """Handle getting or creating ingredients as needed."""
-        auth_user = self.context['request'].user
         for ingredient in ingredients:
             ingredient_obj, created = Ingredient.objects.get_or_create(
-                user=auth_user,
                 **ingredient,
             )
             recipe.ingredients.add(ingredient_obj)
@@ -116,7 +146,7 @@ class RecipeDetailSerializer(RecipeSerializer):
     comments = CommentSerializer(many=True, read_only=True)
 
     class Meta(RecipeSerializer.Meta):
-        fields = RecipeSerializer.Meta.fields + ['description', 'image', 'ratings', 'comments']
+        fields = RecipeSerializer.Meta.fields + ['ratings', 'comments']
 
 
 class RecipeImageSerializer(serializers.ModelSerializer):
