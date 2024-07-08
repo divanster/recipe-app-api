@@ -1,3 +1,5 @@
+# backend/app/recipe/views.py
+
 from drf_spectacular.utils import (
     extend_schema_view,
     extend_schema,
@@ -14,8 +16,11 @@ from rest_framework import (
 from rest_framework.decorators import action
 from rest_framework import generics, permissions
 from core.models import User
-from .serializers import (UserSerializer, RecipeSerializer, TagSerializer, IngredientSerializer,
-                          RatingSerializer, FollowSerializer, CommentSerializer, RecipeDetailSerializer)
+from .serializers import (
+    UserSerializer, RecipeSerializer, TagSerializer, IngredientSerializer,
+    RatingSerializer, FollowSerializer, CommentSerializer, RecipeDetailSerializer,
+    RecipeImageSerializer
+)
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -34,6 +39,9 @@ class ProfileView(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
 
 
 @extend_schema_view(
@@ -58,6 +66,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        """Create a new recipe."""
+        print(serializer.validated_data)  # Log the incoming validated data
+        serializer.save(user=self.request.user)
 
     def _params_to_ints(self, qs):
         """Convert a list of strings to integers."""
@@ -85,10 +98,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeImageSerializer
 
         return self.serializer_class
-
-    def perform_create(self, serializer):
-        """Create a new recipe."""
-        serializer.save(user=self.request.user)
 
     @action(methods=['POST'], detail=True, url_path='upload-image')
     def upload_image(self, request, pk=None):

@@ -77,7 +77,7 @@ class Recipe(models.Model):
 
 class Ingredient(models.Model):
     """Ingredient for recipes."""
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -86,7 +86,7 @@ class Ingredient(models.Model):
 
 class Tag(models.Model):
     """Tag for filtering recipes."""
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -101,7 +101,7 @@ class Rating(models.Model):
     class Meta:
         unique_together = ('user', 'recipe')
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **akwargs):
         super().save(*args, **kwargs)
         self.recipe.update_rating()
 

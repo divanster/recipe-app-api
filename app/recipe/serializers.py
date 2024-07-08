@@ -1,37 +1,6 @@
-# recipe/serializers.py
-
 from rest_framework import serializers
 from core.models import Recipe, Tag, Ingredient, Rating, Follow, Comment, User
-
-
-class UserSerializer(serializers.ModelSerializer):
-    """Serializer for user profiles."""
-    password = serializers.CharField(write_only=True)
-    recipes = serializers.PrimaryKeyRelatedField(many=True, queryset=Recipe.objects.all(), source='recipe_set')
-    following = serializers.SerializerMethodField()
-    followers = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = ['id', 'email', 'name', 'password', 'recipes', 'following', 'followers']
-
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            email=validated_data['email'],
-            name=validated_data['name'],
-            password=validated_data['password']
-        )
-        return user
-
-    def get_following(self, obj):
-        """Return a list of users the current user is following."""
-        follows = Follow.objects.filter(follower=obj)
-        return [follow.followee.id for follow in follows]
-
-    def get_followers(self, obj):
-        """Return a list of users following the current user."""
-        followers = Follow.objects.filter(followee=obj)
-        return [follow.follower.id for follow in followers]
+from user.serializers import UserSerializer  # Importing the correct UserSerializer
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -99,25 +68,35 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def _get_or_create_tags(self, tags, recipe):
         """Handle getting or creating tags as needed."""
+        user = self.context['request'].user
+        tag_objects = []
         for tag in tags:
             tag_obj, created = Tag.objects.get_or_create(
-                **tag,
+                name=tag['name'],
+                defaults={'user': user}
             )
-            recipe.tags.add(tag_obj)
+            tag_objects.append(tag_obj)
+        recipe.tags.set(tag_objects)
 
     def _get_or_create_ingredients(self, ingredients, recipe):
         """Handle getting or creating ingredients as needed."""
+        user = self.context['request'].user
+        ingredient_objects = []
         for ingredient in ingredients:
             ingredient_obj, created = Ingredient.objects.get_or_create(
-                **ingredient,
+                name=ingredient['name'],
+                defaults={'user': user}
             )
-            recipe.ingredients.add(ingredient_obj)
+            ingredient_objects.append(ingredient_obj)
+        recipe.ingredients.set(ingredient_objects)
 
     def create(self, validated_data):
         """Create a recipe."""
         tags = validated_data.pop('tags', [])
         ingredients = validated_data.pop('ingredients', [])
         recipe = Recipe.objects.create(**validated_data)
+        recipe.user = self.context['request'].user
+        recipe.save()
         self._get_or_create_tags(tags, recipe)
         self._get_or_create_ingredients(ingredients, recipe)
         return recipe
@@ -126,11 +105,11 @@ class RecipeSerializer(serializers.ModelSerializer):
         """Update recipe."""
         tags = validated_data.pop('tags', None)
         ingredients = validated_data.pop('ingredients', None)
+        user = self.context['request'].user
+
         if tags is not None:
-            instance.tags.clear()
             self._get_or_create_tags(tags, instance)
         if ingredients is not None:
-            instance.ingredients.clear()
             self._get_or_create_ingredients(ingredients, instance)
 
         for attr, value in validated_data.items():
