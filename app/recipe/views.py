@@ -14,16 +14,16 @@ from rest_framework import (
 )
 
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics, permissions
-from core.models import User
 from .serializers import (
-    UserSerializer, RecipeSerializer, TagSerializer, IngredientSerializer,
+    RecipeSerializer, TagSerializer, IngredientSerializer,
     RatingSerializer, FollowSerializer, CommentSerializer, RecipeDetailSerializer,
     RecipeImageSerializer
 )
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from core.models import (
     Recipe,
     Tag,
@@ -32,16 +32,6 @@ from core.models import (
     Follow,
     Comment,
 )
-
-
-class ProfileView(generics.RetrieveAPIView):
-    """Retrieve profile details of a user."""
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_object(self):
-        return self.request.user
 
 
 @extend_schema_view(

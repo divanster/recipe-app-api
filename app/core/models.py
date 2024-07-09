@@ -101,7 +101,7 @@ class Rating(models.Model):
     class Meta:
         unique_together = ('user', 'recipe')
 
-    def save(self, *args, **akwargs):
+    def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.recipe.update_rating()
 

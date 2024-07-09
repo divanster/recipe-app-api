@@ -1,6 +1,6 @@
+# recipe/serializers.py
 from rest_framework import serializers
-from core.models import Recipe, Tag, Ingredient, Rating, Follow, Comment, User
-from user.serializers import UserSerializer  # Importing the correct UserSerializer
+from core.models import Recipe, Tag, Ingredient, Rating, Follow, Comment
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -49,7 +49,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     average_rating = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
     ratings_count = serializers.IntegerField(read_only=True)
     is_liked = serializers.SerializerMethodField()
-    user = UserSerializer(read_only=True)
+    user = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Recipe
@@ -105,7 +105,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         """Update recipe."""
         tags = validated_data.pop('tags', None)
         ingredients = validated_data.pop('ingredients', None)
-        user = self.context['request'].user
 
         if tags is not None:
             self._get_or_create_tags(tags, instance)

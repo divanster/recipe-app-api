@@ -12,10 +12,12 @@ from rest_framework import serializers
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the users object"""
+    followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
 
     class Meta:
         model = get_user_model()
-        fields = ('email', 'password', 'name')
+        fields = ('id', 'name', 'email', 'password', 'followers_count', 'following_count')
         extra_kwargs = {'password': {'write_only': True, 'min_length': 5}}
 
     def create(self, validated_data):
@@ -32,6 +34,14 @@ class UserSerializer(serializers.ModelSerializer):
             user.save()
 
         return user
+
+    def get_followers_count(self, obj):
+        """Get the number of followers for the user"""
+        return obj.followers.count()
+
+    def get_following_count(self, obj):
+        """Get the number of users the user is following"""
+        return obj.following.count()
 
 
 class AuthTokenSerializer(serializers.Serializer):
